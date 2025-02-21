@@ -2,23 +2,22 @@ package vafswork
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"sort"
 )
 
 // get full path of Go executable
-func GetExePath() string {
+func GetExePath() (string, error) {
 	// get executable's working dir
 	exe, err := os.Executable()
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
 
 	exePath := filepath.Dir(exe)
 
-	return exePath
+	return exePath, nil
 }
 
 // Rotate files: keep <num> of most recent files and delete other
@@ -31,19 +30,14 @@ func RotateFilesByMtime(filesDir string, filesToKeep int) error {
 	}
 
 	// sort file slice by modification time(asc)
-	sort.Slice(files, func(i, j int) bool {
-		fileI, err := files[i].Info()
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		fileJ, err := files[j].Info()
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		return fileI.ModTime().After(fileJ.ModTime())
-	})
+	sort.Slice(
+		files,
+		func(i, j int) bool {
+			fileI, _ := files[i].Info()
+			fileJ, _ := files[j].Info()
+			return fileI.ModTime().After(fileJ.ModTime())
+		},
+	)
 
 	// delete files which index more than <filesToKeep> value
 	for ind, file := range files {
@@ -56,11 +50,8 @@ func RotateFilesByMtime(filesDir string, filesToKeep int) error {
 		if ind+1 > filesToKeep {
 			fileToDel = fmt.Sprintf("%s/%s", filesDir, file.Name())
 
-			if err := os.Remove(fileToDel); err != nil {
-				log.Printf("failed to remove file %s:\n\t%v\n", file.Name(), err)
-			} else {
-				log.Printf("file %s removed\n", file.Name())
-			}
+			// skip all errors of os.Remove(Path errors)
+			os.Remove(fileToDel)
 		}
 	}
 
