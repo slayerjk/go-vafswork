@@ -8,16 +8,11 @@ import (
 )
 
 // get full path of Go executable
-func GetExePath() (string, error) {
+func GetExePath() string {
 	// get executable's working dir
-	exe, err := os.Executable()
-	if err != nil {
-		return "", err
-	}
-
+	exe, _ := os.Executable()
 	exePath := filepath.Dir(exe)
-
-	return exePath, nil
+	return exePath
 }
 
 // Rotate files: keep <num> of most recent files and delete other
